@@ -89,6 +89,7 @@ class Bomb:
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
+
 class Score:
     """
     打ち落とした爆弾の数を表示するクラス
@@ -105,65 +106,27 @@ class Score:
     def update(self, screen: pg.Surface):
         self.img = self.fonto.render(f"Score: {self.score}", 0, self.color)
         screen.blit(self.img, self.rct)
+class Explosion:
+    """
+    爆弾が爆発するエフェクトを表示するクラス
+    """
+    def __init__(self, obj_rct: pg.Rect):
+        # 元の画像と、上下左右にフリップした画像の2つをリストに格納
+        img = pg.image.load("fig/explosion.gif")
+        self.imgs = [img, pg.transform.flip(img, True, True)]
+        self.rct = img.get_rect()
+        self.rct.center = obj_rct.center  # 爆発した爆弾の中心座標を設定
+        self.life = 40  # 表示時間（爆発時間）を設定
 
-def main():
-    pg.display.set_caption("たたかえ！こうかとん")
-    screen = pg.display.set_mode((WIDTH, HEIGHT))    
-    bg_img = pg.image.load("fig/pg_bg.jpg")
-    bird = Bird((300, 200))
-    bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
-    beams = [] 
-    
-    # 1. Scoreインスタンスの生成
-    score = Score() 
-    
-    clock = pg.time.Clock()
+    def update(self, screen: pg.Surface):
+        self.life -= 1  # 爆発経過時間を減算
+        # lifeが正の間、2つの画像を交互に切り替えて表示
+        if self.life > 0:
+            # 2で割った余り(0 or 1)を使うことで、1フレームごとに画像が入れ替わる
+            img_idx = self.life % 2
+            screen.blit(self.imgs[img_idx], self.rct)
 
-    while True:
-        for event in pg.event.get():
-            if event.type == pg.QUIT: return
-            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                beams.append(Beam(bird))          
-        
-        screen.blit(bg_img, [0, 0])
-        for i, bomb in enumerate(bombs):
-            if bird.rct.colliderect(bomb.rct):
-                # ゲームオーバー処理（省略）
-                fonto = pg.font.Font(None, 80)
-                txt = fonto.render("Game Over", True, (255, 0, 0))
-                screen.blit(txt, [WIDTH//2-150, HEIGHT//2])
-                pg.display.update()
-                time.sleep(2)
-                return
-                
-            for j, beam in enumerate(beams):
-                if beam is not None and bomb is not None:
-                    if beam.rct.colliderect(bomb.rct):
-                        # 衝突した要素をNoneにする
-                        beams[j] = None
-                        bombs[i] = None
-                        bird.change_img(6, screen)
-                        score.score += 1
-                        break # 爆弾が消えたのでこの爆弾のループを抜ける
 
-        beams = [b for b in beams if b is not None]
-        bombs = [b for b in bombs if b is not None]
-        key_lst = pg.key.get_pressed()
-        bird.update(key_lst, screen)
-        
-        for i, beam in enumerate(beams):
-            beam.update(screen)
-            if check_bound(beam.rct) != (True, True):
-                beams[i] = None
-        beams = [b for b in beams if b is not None]
-        for bomb in bombs:
-            bomb.update(screen)
-            
-        # 3. スコアの描画更新
-        score.update(screen) 
-            
-        pg.display.update()
-        clock.tick(50)
 
 # ... (以下 init 等)
 
