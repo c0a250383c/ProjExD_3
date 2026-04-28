@@ -90,6 +90,7 @@ class Bomb:
         screen.blit(self.img, self.rct)
 
 
+
 class Score:
     """
     打ち落とした爆弾の数を表示するクラス
