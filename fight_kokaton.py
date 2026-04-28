@@ -141,6 +141,78 @@ def main():
             
         pg.display.update()
         clock.tick(50)
+class Score:
+    """
+    打ち落とした爆弾の数を表示するクラス
+    """
+    def __init__(self):
+        self.fonto = pg.font.SysFont(None, 30)
+        self.color = (0, 0, 255) # 青
+        self.score = 0
+        self.img = self.fonto.render(f"Score: {self.score}", 0, self.color)
+        # 画面左下（横100, 縦は下から50）
+        self.rct = self.img.get_rect()
+        self.rct.center = (100, 650 - 50)
+
+    def update(self, screen: pg.Surface):
+        self.img = self.fonto.render(f"Score: {self.score}", 0, self.color)
+        screen.blit(self.img, self.rct)
+
+def main():
+    pg.display.set_caption("たたかえ！こうかとん")
+    screen = pg.display.set_mode((WIDTH, HEIGHT))    
+    bg_img = pg.image.load("fig/pg_bg.jpg")
+    bird = Bird((300, 200))
+    bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
+    beam = None
+    
+    # 1. Scoreインスタンスの生成
+    score = Score() 
+    
+    clock = pg.time.Clock()
+
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT: return
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                beam = Beam(bird)            
+        
+        screen.blit(bg_img, [0, 0])
+        
+        for i, bomb in enumerate(bombs):
+            if bomb is not None:
+                if bird.rct.colliderect(bomb.rct):
+                    # ゲームオーバー処理（省略）
+                    return
+                
+                if beam is not None and beam.rct.colliderect(bomb.rct):
+                    beam = None
+                    bombs[i] = None
+                    bird.change_img(6, screen)
+                    
+                    # 2. スコアアップ（1点）
+                    score.score += 1 
+                    break 
+
+        bombs = [b for b in bombs if b is not None]
+        key_lst = pg.key.get_pressed()
+        bird.update(key_lst, screen)
+        
+        if beam is not None:
+            beam.update(screen)
+            if check_bound(beam.rct) != (True, True):
+                beam = None
+
+        for bomb in bombs:
+            bomb.update(screen)
+            
+        # 3. スコアの描画更新
+        score.update(screen) 
+            
+        pg.display.update()
+        clock.tick(50)
+
+# ... (以下 init 等)
 
 if __name__ == "__main__":
     pg.init()
