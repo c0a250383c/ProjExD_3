@@ -108,6 +108,10 @@ def main():
         for bomb in bombs:
             if bomb is not None and bird.rct.colliderect(bomb.rct):
                 bird.change_img(8, screen)
+                fonto = pg.font.Font(None, 80)
+                txt = fonto.render("Game Over", True, (255, 0, 0))
+                screen.blit(txt, [WIDTH//2-150, HEIGHT//2])
+
                 pg.display.update()
                 time.sleep(1)
                 return
@@ -125,6 +129,7 @@ def main():
 
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
+
         
         # スライド19：updateメソッドを呼び出して座標更新+blit
         if beam is not None:
