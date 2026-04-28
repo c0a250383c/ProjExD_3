@@ -32,7 +32,8 @@ class Bird:
     }
 
     def __init__(self, xy: tuple[int, int]):
-        self.img = __class__.imgs[(+5, 0)]
+        self.dire = (+5, 0)  # 初期向き：右
+        self.img = __class__.imgs[self.dire]
         self.rct: pg.Rect = self.img.get_rect()
         self.rct.center = xy
 
@@ -50,22 +51,25 @@ class Bird:
         if check_bound(self.rct) != (True, True):
             self.rct.move_ip(-sum_mv[0], -sum_mv[1])
         if not (sum_mv[0] == 0 and sum_mv[1] == 0):
-            self.img = __class__.imgs[tuple(sum_mv)]
+            self.dire = tuple(sum_mv)  # 向きを更新
+            self.img = __class__.imgs[self.dire]
         screen.blit(self.img, self.rct)
 
 class Beam:
-    def __init__(self, bird: "Bird"):
-        # スライド19：beam.pngをロード
+    def __init__(self, bird: Bird):
         self.img = pg.image.load("fig/beam.png")
         self.rct = self.img.get_rect()
-        # スライド19：こうかとんの右に配置
-        self.rct.centery = bird.rct.centery
-        self.rct.left = bird.rct.right
-        # スライド19：速度は横5, 縦0
-        self.vx, self.vy = +5, 0
+        # スライド14：こうかとんの向き（vx, vy）をビームの速度にする
+        self.vx, self.vy = bird.dire
+        # スライド14：ビームの初期位置をこうかとんの中心に
+        self.rct.center = bird.rct.center
+        
+        # 向きに合わせてビームの画像を回転させる（おまけ：見た目が良くなります）
+        import math
+        angle = math.degrees(math.atan2(-self.vy, self.vx))
+        self.img = pg.transform.rotozoom(self.img, angle, 1.0)
 
     def update(self, screen: pg.Surface):
-        # スライド19：画面内なら座標更新しblit
         self.rct.move_ip(self.vx, self.vy)
         screen.blit(self.img, self.rct)
 
@@ -91,31 +95,27 @@ def main():
     bg_img = pg.image.load("fig/pg_bg.jpg")
     bird = Bird((300, 200))
     bombs = [Bomb((255, 0, 0), 10) for _ in range(NUM_OF_BOMBS)]
-
-    # スライド19：beam変数をNoneで初期化
     beam = None
     clock = pg.time.Clock()
 
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT: return
-            # スライド19：スペースキー押下でBeamインスタンス生成
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                # スペースでビーム生成（今のbirdの状態を渡す）
                 beam = Beam(bird)            
         
         screen.blit(bg_img, [0, 0])
         
-        for bomb in bombs:
-            if bomb is not None and bird.rct.colliderect(bomb.rct):
-                bird.change_img(8, screen)
-                pg.display.update()
-                time.sleep(1)
-                return
-        
-        # 衝突判定（Noneチェック）
-        if beam is not None:
-            for i, bomb in enumerate(bombs):
-                if bomb is not None and beam.rct.colliderect(bomb.rct):
+        # 衝突判定
+        for i, bomb in enumerate(bombs):
+            if bomb is not None:
+                if bird.rct.colliderect(bomb.rct):
+                    bird.change_img(8, screen)
+                    pg.display.update()
+                    time.sleep(1)
+                    return
+                if beam is not None and beam.rct.colliderect(bomb.rct):
                     beam = None
                     bombs[i] = None
                     bird.change_img(6, screen)
@@ -126,10 +126,8 @@ def main():
         key_lst = pg.key.get_pressed()
         bird.update(key_lst, screen)
         
-        # スライド19：updateメソッドを呼び出して座標更新+blit
         if beam is not None:
             beam.update(screen)
-            # 画面外に出たらNoneに戻す
             if check_bound(beam.rct) != (True, True):
                 beam = None
 
